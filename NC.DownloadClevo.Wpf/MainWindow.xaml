@@ -1,0 +1,213 @@
+﻿<mah:MetroWindow x:Class="NC.DownloadClevo.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NC.DownloadClevo.Wpf"
+        xmlns:core="clr-namespace:NC.DownloadClevo.Core"
+        mc:Ignorable="d"
+        
+        xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        
+        x:Name="thisPage"
+        
+        Title="NC Clevo Downloader" Height="600" Width="600"
+                 FontFamily="Segoe UI" FontWeight="Light"
+                 FontSize="16"
+        
+        DataContext="{DynamicResource data}">
+
+    <mah:MetroWindow.Resources>
+        <core:ProjectData MainWindow="{x:Reference thisPage}"
+                          x:Key="data"/>
+    </mah:MetroWindow.Resources>
+
+    <Grid>
+        <mah:MetroProgressBar Height="8" VerticalAlignment="Top"
+                              Maximum="1" Minimum="0" Value="{Binding ProgressValue}"
+                              IsIndeterminate="{Binding IsProgressUnknown}"></mah:MetroProgressBar>
+
+        <Label Content="{Binding ProgressText}" FontSize="12"
+               Margin="0,8,0,0"></Label>
+
+        <mah:MetroTabControl
+            Margin="16,32,16,16"
+            Padding="16"
+            SelectedValue="{Binding ActiveTab, Mode=OneWayToSource}"
+            SelectedValuePath="Header">
+
+            <mah:MetroTabItem Header="Models">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Label>Included Models:</Label>
+                    <TextBox HorizontalAlignment="Right"
+                             Width="200"
+                             Text="{Binding FilterModel, UpdateSourceTrigger=PropertyChanged}"></TextBox>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding Models}" Margin="0,8,0,8">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,4,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Rectangle Fill="#FF0079FF"
+                                               HorizontalAlignment="Left" Width="5"
+                                               Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Series}"/>
+                                        <TextBlock Style="{DynamicResource Subtext}"
+                                                   Text="{Binding Key}" />
+                                    </StackPanel>
+
+                                    <CheckBox Grid.Column="2"
+                                              IsChecked="{Binding IsIncluded}"
+                                              Command="{Binding Save, Source={StaticResource data}}"
+                                              Margin="0,0,16,0"/>
+
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Button Grid.Row="2"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding RefreshModel}">Refresh Model List</Button>
+
+                </Grid>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem Header="Discovery">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Label>ALL Drivers from Selected Models</Label>
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding DiscoveredDrivers}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,8,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="0.8*"/>
+                                        <ColumnDefinition Width="0.2*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock>
+                                            <Span>
+                                                <Run Text="{Binding FriendlyDisplay, Mode=OneWay}"
+                                                     FontWeight="Bold"></Run>
+                                            </Span>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"
+                                               Style="{DynamicResource Subtext}"/>
+                                        <TextBlock Style="{DynamicResource Subtext}">
+                                            <Span>
+                                                <Run Text="from:"></Run>
+                                                <Run Text="{Binding ModelName, Mode=OneWay}"></Run>
+                                            </Span>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding ParsedVersion}" FontWeight="Bold"
+                                                   HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding Date, StringFormat={}{0:dd MMM yyyy}}"
+                                                    Style="{DynamicResource Subtext}"
+                                                   HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                </Grid>
+            </mah:MetroTabItem>
+            <mah:MetroTabItem Header="Merge">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="300"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1*" />
+                    </Grid.RowDefinitions>
+                    <Label>Write Rule to Group Driver</Label>
+
+                    <TextBox Grid.Row="1" Text="{Binding NormalizeScript, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="Consolas" FontSize="14"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Visible"/>
+
+                    <Button Grid.Row="1" HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            Margin="0,10,30,0"
+                            Command="{Binding PerformGrouping}">
+                        Execute
+                    </Button>
+
+                    <Label Grid.Row="2">Grouping Result</Label>
+
+                    <ScrollViewer Grid.Row="3">
+                        <ItemsControl 
+                                 ItemsSource="{Binding MergedDrivers}"
+                                 ScrollViewer.CanContentScroll="True">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,8,16,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="0.8*"/>
+                                            <ColumnDefinition Width="0.2*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock>
+                                            <Run Text="{Binding GroupName, Mode=OneWay}"
+                                                    FontWeight="Bold"></Run>
+                                            </TextBlock>
+
+                                            <Expander Header="Models:"  ExpandDirection="Down">
+                                                <ItemsControl ItemsSource="{Binding Models}"
+                                                      Margin="8,0,0,0">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding}" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Expander>
+
+                                            <Expander Header="Sample file names:"  ExpandDirection="Down">
+                                                <ItemsControl ItemsSource="{Binding Sample}"
+                                                      Margin="8,0,0,0">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding}"/>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                            </Expander>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Newest.ParsedVersion}" FontWeight="Bold"
+                                                   HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding Newest.Date, StringFormat={}{0:dd MMM yyyy}}"
+                                                    Style="{DynamicResource Subtext}"
+                                                   HorizontalAlignment="Right"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </mah:MetroTabItem>
+        </mah:MetroTabControl>
+    </Grid>
+</mah:MetroWindow>
