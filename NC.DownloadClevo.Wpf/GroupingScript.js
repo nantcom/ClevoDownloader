@@ -1,15 +1,16 @@
 var fileName = input.value.FileName.toLowerCase();
 var description = input.value.Description.toLowerCase();
 var model = input.value.ModelName.toLowerCase();
+var genericKey = fileName + "-" + model;
 
 var description_contains = function (sub) {
 
     return description.indexOf(sub) >= 0;
 };
 
-fileName = fileName.replace(/.zip$/gi, "-");
-fileName = fileName.replace("_D_", "-");
-fileName = fileName.replace(/\_/gi, "-");
+fileName = fileName.replace(/.zip$/gi, "");
+fileName = fileName.replace("_D_", "");
+fileName = fileName.replace(/\_/gi, "");
 fileName = fileName.replace(/\-/gi, "");
 fileName = fileName.replace(/[0-9]/gi, "");
 fileName = fileName.trim();
@@ -22,7 +23,8 @@ if (description_contains("11ad ")) {
 }
 
 if (description_contains("intel vga ") ||
-    description_contains("intel graphics driver ")) {
+    description_contains("intel graphics driver ") ||
+    fileName.indexOf("ivga") >= 0) {
     return "(Exclude) Intel VGA";
 }
 
@@ -65,6 +67,15 @@ if (description_contains("control center") &&
     return "Control Center 1";
 }
 
+if (description_contains("control center") &&
+    (
+        description_contains("ver 1.") ||
+        description_contains("version 1.") ||
+        description_contains("version. 1.")
+    )) {
+    return "Control Center 1";
+}
+
 if (description_contains("hotkey") &&
     description_contains("5.0001.")) {
     return "Control Center 1";
@@ -74,9 +85,17 @@ if (description_contains("hotkey driver 3.20.35")) {
     return "Control Center 1";
 }
 
-if (description_contains("control center 2.0 ap") ||
-    description_contains("control center ap version 2.") ||
-    description_contains("control center ap 2.0")) {
+if (
+    description_contains("control center") &&
+        (description_contains("2.0") ||
+        description_contains("version 2."))) {
+
+    if (description_contains("center3.0") ||
+        description_contains("center 3.0")) {
+
+        return "Control Center 3";
+    }
+
     return "Control Center 2";
 }
 
@@ -87,6 +106,11 @@ if (description_contains("control center 3.0") ||
     description_contains("control center ap 3") ||
     description_contains("control center version 3.") ||
     description_contains("control center driver version 3.") ||
+    description_contains("hotkey v3.42") ||
+    (description_contains("control center") && description_contains("ver. 3.")) ||
+    (description_contains("control center") && description_contains("3.55")) ||
+    (description_contains("controlcenter") && description_contains("3.55")) ||
+    (description_contains("control center ap") && description_contains("version 3.01")) ||
     (description_contains("c_center") && description_contains("version 3."))) {
     return "Control Center 3";
 }
@@ -122,7 +146,8 @@ if (description_contains("dptf ")) {
     return "Intel DPTF";
 }
 
-if (description_contains("dtt ")) {
+if (description_contains("dtt ") ||
+    fileName == "dttg") {
     return "Intel Dynamic Tuning";
 }
 
@@ -140,6 +165,7 @@ if (description_contains("intel wlan ") ||
     description_contains("intel bt ") ||
     description_contains("intel combo card ") ||
     description_contains("intel combo bluetooth ") ||
+    (description_contains("intel") && description_contains("wlan ")) ||
     (description_contains("combo card bt") && description_contains("intel")) ||
     (description_contains("combo card") && description_contains("intel")) ||
     fileName == "icombo" ||
@@ -162,7 +188,8 @@ if (fileName == "irstart") {
     return "(Exclude) Intel Rapid Start Technology";
 }
 
-if (fileName == "serialio" ||
+if (description_contains("serial io ") ||
+    fileName == "serialio" ||
     fileName == "serialiod") {
     return "Intel Serial IO";
 }
@@ -171,7 +198,8 @@ if (fileName == "sgx") {
     return "Intel SGX (Software Guard Extension)";
 }
 
-if (fileName == "speedshift" ||
+if (description_contains("intel speed shift") ||
+    fileName == "speedshift" ||
     fileName == "speedshiftd") {
     return "Intel SpeedShift Driver";
 }
@@ -181,6 +209,9 @@ if (description_contains("tbt ") ||
     return "Intel Thunderbolt Driver";
 }
 
+if (fileName == "txe") {
+    return "Intel TXE";
+}
 if (fileName == "intelwidi") {
     return "(Exclude) Intel WiDi";
 }
@@ -198,7 +229,7 @@ if (description_contains("hid filter ") ||
 if (description_contains("killer ") ||
     description_contains("killer") ||
     fileName == "kcombo") {
-    return "Killer Wireless";
+    return "(Exclude) Killer Wireless";
 }
 
 if (description_contains("nvidia vga ") ||
@@ -224,15 +255,22 @@ if (description_contains("cinema3 ap")) {
     return "Sound Blaster Cinema 3";
 }
 
+if (description_contains("cinema5")) {
+    return "Sound Blaster Cinema 5";
+}
+
 if (description_contains("xfi mb5") ||
     description_contains("x-fi mb5") ||
     description_contains("sound blaster mb5") ||
     description_contains("sbx5") ||
-    description_contains("xi-fi mb5")) {
+    description_contains("xi-fi mb5") ||
+    description_contains("x-fi5")) {
     return "Sound Blaster X-Fi MB5";
 }
 
-if (description_contains("sound blaster cinema2 ap")) {
+if (description_contains("sound blaster cinema2 ap") ||
+    description_contains("sound blaster cinema 2 ap") ||
+    description_contains("sound blaster 2 cinema ap")) {
     return "Sound Blaster Cinema 2";
 }
 
@@ -250,7 +288,8 @@ if (description_contains("sbx ") &&
 }
 
 if (description_contains("touchpad") ||
-    description_contains("touch pad")) {
+    description_contains("touch pad") ||
+    fileName == "touchpad") {
     return "Synaptics Touchpad";
 }
 
@@ -270,7 +309,9 @@ if (fileName == "vga" ||
     fileName == "vgabeta") {
     return "(Exclude) Intel/Nvidia Graphic";
 }
-if (fileName == "preinstallkit") {
+if (fileName == "preinstallkit" ||
+    description_contains("audio preinstall ") ||
+    description_contains(" preinstall ")) {
 
     return "Windows 10/11 DCH Driver Pre-Install Kit";
 }
@@ -280,4 +321,12 @@ if (description.indexOf("sbx-fi mb3") >= 0) {
     return "Sound Blaster X-Fi MB3";
 }
 
-return fileName;
+// --- Specific Fix
+
+if (genericKey == "raid_0708.zip-n960kp_kr") {
+
+    return "Intel Rapid Storage Technology";
+}
+input.log(fileName);
+
+return "(Ungrouped) " + genericKey;

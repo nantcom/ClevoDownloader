@@ -8,10 +8,11 @@
         mc:Ignorable="d"
         
         xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+        xmlns:lib="clr-namespace:NC.Lib"
         
         x:Name="thisPage"
         
-        Title="NC Clevo Downloader" Height="600" Width="600"
+        Title="NC Clevo Downloader" Height="800" Width="600"
                  FontFamily="Segoe UI" FontWeight="Light"
                  FontSize="16"
         
@@ -20,6 +21,7 @@
     <mah:MetroWindow.Resources>
         <core:ProjectData MainWindow="{x:Reference thisPage}"
                           x:Key="data"/>
+        <lib:JSExpressionConverter x:Key="js" />
     </mah:MetroWindow.Resources>
 
     <Grid>
@@ -83,54 +85,7 @@
 
                 </Grid>
             </mah:MetroTabItem>
-            <mah:MetroTabItem Header="Discovery">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Label>ALL Drivers from Selected Models</Label>
-                    <ListBox Grid.Row="1"
-                             ItemsSource="{Binding DiscoveredDrivers}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,8,0,8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="0.8*"/>
-                                        <ColumnDefinition Width="0.2*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock>
-                                            <Span>
-                                                <Run Text="{Binding FriendlyDisplay, Mode=OneWay}"
-                                                     FontWeight="Bold"></Run>
-                                            </Span>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap"
-                                               Style="{DynamicResource Subtext}"/>
-                                        <TextBlock Style="{DynamicResource Subtext}">
-                                            <Span>
-                                                <Run Text="from:"></Run>
-                                                <Run Text="{Binding ModelName, Mode=OneWay}"></Run>
-                                            </Span>
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding ParsedVersion}" FontWeight="Bold"
-                                                   HorizontalAlignment="Right"/>
-                                        <TextBlock Text="{Binding Date, StringFormat={}{0:dd MMM yyyy}}"
-                                                    Style="{DynamicResource Subtext}"
-                                                   HorizontalAlignment="Right"/>
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-
-                </Grid>
-            </mah:MetroTabItem>
-            <mah:MetroTabItem Header="Merge">
+            <mah:MetroTabItem Header="Group">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -166,7 +121,7 @@
                                             <ColumnDefinition Width="0.2*"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock>
+                                            <TextBlock Margin="0,0,0,24">
                                             <Run Text="{Binding GroupName, Mode=OneWay}"
                                                     FontWeight="Bold"></Run>
                                             </TextBlock>
@@ -183,11 +138,21 @@
                                             </Expander>
 
                                             <Expander Header="Sample file names:"  ExpandDirection="Down">
-                                                <ItemsControl ItemsSource="{Binding Sample}"
+                                                <ItemsControl ItemsSource="{Binding Drivers}"
                                                       Margin="8,0,0,0">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <TextBlock Text="{Binding}"/>
+                                                            <StackPanel Margin="0,0,0,8">
+                                                                <TextBlock>
+                                                                    <Run Text="{Binding FileName, Mode=OneWay}"/>
+                                                                    <Run Text="from"/>
+                                                                    <Run Text="{Binding ModelName, Mode=OneWay}"
+                                                                         FontWeight="Bold"/>
+                                                                </TextBlock>
+                                                                <TextBlock Style="{DynamicResource Subtext}">
+                                                                    <Run Text="{Binding Description, Mode=OneWay}"/>
+                                                                </TextBlock>
+                                                            </StackPanel>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
@@ -206,6 +171,97 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
+                </Grid>
+            </mah:MetroTabItem>
+
+            <mah:MetroTabItem Header="Select">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Label>ALL Drivers from Selected Models</Label>
+                    <ScrollViewer  Grid.Row="1">
+                        <ItemsControl
+                             ItemsSource="{Binding ModelWithDrivers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+
+                                    <Expander Header="{Binding Model}"  ExpandDirection="Down" IsExpanded="True">
+                                        <ItemsControl ItemsSource="{Binding Drivers}"
+                                                      Margin="24,0,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,8,0,8">
+                                                        <TextBlock Margin="0,0,0,8">
+                                                            <Run Text="{Binding Newest.DriverGroup, Mode=OneWay}" />
+                                                        </TextBlock>
+                                                        <CheckBox Content="{Binding Newest.ParsedVersion, Mode=OneWay}" FontWeight="Bold"
+                                                                     Margin="0,0,0,8"
+                                                                     IsChecked="{Binding Newest.IsChosen}"/>
+
+                                                        <CheckBox Content="{Binding NewestForModel.ParsedVersion, Mode=OneWay}"
+                                                                     IsChecked="{Binding NewestForModel.IsChosen}">
+                                                            <CheckBox.Visibility>
+                                                                <Binding Converter="{StaticResource js}">
+                                                                    <Binding.ConverterParameter>
+                                                                        <![CDATA[
+                                                                        return input.value.NewestForModel != null;
+                                                                        ]]>
+                                                                    </Binding.ConverterParameter>
+                                                                </Binding>
+                                                            </CheckBox.Visibility>
+                                                        </CheckBox>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                    </Expander>
+
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </mah:MetroTabItem>
+
+            <mah:MetroTabItem Header="Download">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ListBox Margin="0,0,0,8"
+                             ItemsSource="{Binding DriverToDownload}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,8,0,8">
+                                    <TextBlock Text="{Binding Driver.DriverGroup}"
+                                               FontWeight="Bold" />
+                                    <TextBlock Style="{DynamicResource Subtext}">
+                                        <Run Text="Error: " />
+                                        <Run Text="{Binding IsDownloadError, Mode=OneWay}" />
+                                        <Run Text="| Average Download Speed:" />
+                                        <Run Text="{Binding DownloadSpeed, Mode=OneWay}" />
+                                        <Run Text="MB/s" />
+                                    </TextBlock>
+                                    <TextBlock  Style="{DynamicResource Subtext}"
+                                        Text="{Binding DownloadUrl}"
+                                               Margin="0,0,0,8"/>
+                                    <mah:MetroProgressBar
+                                        Value="{Binding DownloadProgress}"
+                                        Maximum="1" Minimum="0"></mah:MetroProgressBar>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Button Grid.Row="1"
+                            Command="{Binding DownloadDrivers}">
+                        Download
+                    </Button>
                 </Grid>
             </mah:MetroTabItem>
         </mah:MetroTabControl>

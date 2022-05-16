@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -10,10 +11,30 @@ namespace NC.DownloadClevo.Core
     public class Driver
     {
         public string Description { get; set; }
+
         public string FileName { get; set; }
+
         public string USDownloadLink { get; set; }
+
         public string Version { get; set; }
+
         public DateTime Date { get; set; }
+
+        public bool IsUrlValid { get; set; }
+
+        public string DownloadUrl { get; set; }
+
+        public long Size { get; set; }
+
+        /// <summary>
+        /// Hash to globally identify this driver
+        /// </summary>
+        public string DriverHash { get; set; }
+
+        /// <summary>
+        /// Whether this driver is chosen to be downloaded
+        /// </summary>
+        public bool IsChosen { get; set; }
 
         /// <summary>
         /// Original Model that we found this driver
@@ -101,10 +122,45 @@ namespace NC.DownloadClevo.Core
                     }
                 }
 
+                if (string.IsNullOrEmpty(_parsedVersion))
+                {
+                    _parsedVersion = this.Version;
+                }
+
+                if (string.IsNullOrEmpty(_parsedVersion))
+                {
+                    _parsedVersion = this.Date.ToString("yyyy-MM-dd");
+                }
+
                 return _parsedVersion;
             }
         }
 
         public string DriverGroup { get; set; }
+
+        /// <summary>
+        /// Test URL whether this driver can be downloaded
+        /// </summary>
+        /// <returns></returns>
+        public Task TestUrl()
+        {
+            if (this.DownloadUrl != null && this.Size > 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            return Task.Run(() =>
+            {
+                var client = new HttpClient();
+                var req = new HttpRequestMessage(HttpMethod.Head, this.USDownloadLink);
+                var response = client.Send(req);
+
+                this.IsUrlValid = response.StatusCode == System.Net.HttpStatusCode.OK ||
+                            response.StatusCode == System.Net.HttpStatusCode.NoContent;
+
+                this.DownloadUrl = req.RequestUri.OriginalString;
+                this.Size = response.Content.Headers.ContentLength ?? 0;
+            });
+        }
     }
 }

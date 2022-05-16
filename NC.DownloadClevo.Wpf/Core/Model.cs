@@ -15,5 +15,6 @@ namespace NC.DownloadClevo.Core
         public string Url { get; set; }
 
         public bool IsIncluded { get; set; }
+
     }
 }

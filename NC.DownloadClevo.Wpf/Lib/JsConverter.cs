@@ -90,6 +90,11 @@ namespace NC.Lib
                 return Colors.Transparent;
             }
 
+            if (result is bool b && targetType == typeof(Visibility))
+            {
+                return b ? Visibility.Visible : Visibility.Collapsed;
+            }
+
             return result;
 
         }

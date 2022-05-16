@@ -1,15 +1,19 @@
-﻿using DebounceThrottle;
+﻿using Aria2NET;
+using DebounceThrottle;
 using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
 using NC.Lib;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -43,9 +47,13 @@ namespace NC.DownloadClevo.Core
             {
                 return ClevoParser.Models.Where(item =>
                    {
-                       var contains = string.IsNullOrEmpty(_filterModel) == false &&
-                                       item.Key.ToLowerInvariant().Contains(_filterModel);
-                       if (item.IsIncluded || contains)
+                       if (string.IsNullOrEmpty(_filterModel))
+                       {
+                           return item.IsIncluded;
+                       }
+
+                       var contains = item.Key.ToLowerInvariant().Contains(_filterModel);
+                       if (contains == true)
                        {
                            return true;
                        }
@@ -56,18 +64,13 @@ namespace NC.DownloadClevo.Core
             }
         }
 
-        public IEnumerable<Driver> DiscoveredDrivers
+        private ObservableCollection<ModelDrivers> _modelWithDrivers = new();
+
+        public ObservableCollection<ModelDrivers> ModelWithDrivers
         {
             get
             {
-                var selected = this.ClevoParser.Models.Where(m => m.IsIncluded)
-                                    .Select(m => m.Key)
-                                    .ToDictionary(m => m);
-
-                return ClevoParser.Drivers
-                                    .Where(d => selected.ContainsKey(d.ModelName))
-                                    .OrderBy(d => d.FriendlyDisplay);
-
+                return _modelWithDrivers;
             }
         }
 
@@ -78,25 +81,18 @@ namespace NC.DownloadClevo.Core
         {
             get
             {
-                var selected = this.ClevoParser.Models.Where(m => m.IsIncluded)
-                                    .Select(m => m.Key)
-                                    .ToDictionary(m => m);
+                return this.ClevoParser.MergedDrivers;
+            }
+        }
 
-                var groups = this.ClevoParser.Drivers
-                                .Where(d => selected.ContainsKey(d.ModelName))
-                                .ToLookup(d => d.DriverGroup);
-
-                return groups.Select( g =>
-                {
-                    var newest = g.OrderBy(d => d.Date).Last();
-                    return new DriverGroup()
-                    {
-                        Drivers = g.ToList(),
-                        GroupName = newest.DriverGroup,
-                        Newest = newest,
-                    };
-
-                }).OrderBy( d => d.GroupName);
+        /// <summary>
+        /// List of Drivers to be download
+        /// </summary>
+        public IEnumerable<DriverDownload> DriverToDownload
+        {
+            get
+            {
+                return this.ClevoParser.DownloadList;
             }
         }
 
@@ -114,11 +110,14 @@ namespace NC.DownloadClevo.Core
             {
                 switch (value)
                 {
-                    case "Discovery":
-                        this.OnPropertyChanged(nameof(DiscoveredDrivers));
+                    case "Group":
+                        _ = this.OnPropertyChanged(nameof(MergedDrivers));
                         break;
-                    case "Merge":
-                        this.OnPropertyChanged(nameof(MergedDrivers));
+                    case "Select":
+                        this.BuildModelDrivers();
+                        break;
+                    case "Download":
+                        this.BuildDriverDownloadList();
                         break;
                     default:
                         break;
@@ -140,6 +139,8 @@ namespace NC.DownloadClevo.Core
         public BasicCommand RefreshModel { get; }
 
         public BasicCommand PerformGrouping { get; }
+
+        public BasicCommand DownloadDrivers { get; }
 
         private DebounceDispatcher _saveDebounce = new DebounceDispatcher(1000);
         public BasicCommand Save { get; }
@@ -215,8 +216,14 @@ namespace NC.DownloadClevo.Core
                         this.OnPropertyChanged(nameof(ProgressText));
                         this.OnPropertyChanged(nameof(IsProgressUnknown));
 
-                        this.OnPropertyChanged(nameof(DiscoveredDrivers));
                     });
+                }
+            );
+
+            this.DownloadDrivers = new BasicCommand(
+                (parameter) =>
+                {
+                    this.DownloadAllDrivers();
                 }
             );
 
@@ -229,6 +236,50 @@ namespace NC.DownloadClevo.Core
 
             _ = this.OnPropertyChanged();
 
+        }
+
+        private async void BuildModelDrivers()
+        {
+            this.HandleProgress("Creating UI", false,
+                this.ClevoParser.ModelDrivers.Count, 0);
+
+            _modelWithDrivers = new ObservableCollection<ModelDrivers>();
+            await this.OnPropertyChanged(nameof(ModelWithDrivers));
+            await Task.Delay(100);
+
+            await this.ClevoParser.BuildModelDrivers(this.HandleProgress);
+
+
+            foreach (var item in this.ClevoParser.ModelDrivers)
+            {
+                _modelWithDrivers.Add(item);
+
+                await Task.Delay(100);
+
+                this.HandleProgress("Creating UI", false,
+                    this.ClevoParser.ModelDrivers.Count, _modelWithDrivers.Count);
+            }
+
+            this.HandleProgress("Done", false, 1, 1);
+
+        }
+
+        private async void BuildDriverDownloadList()
+        {
+            await this.ClevoParser.BuildDriverDownloadList(this.HandleProgress);
+            await this.OnPropertyChanged(nameof(DriverToDownload));
+        }
+
+        private  void DownloadAllDrivers()
+        {
+            Task.Run(() =>
+            {
+                Parallel.ForEach(this.DriverToDownload, driver =>
+                {
+                    driver.Download(CancellationToken.None).Wait();
+                });
+
+            });
         }
     }
 }
